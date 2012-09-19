@@ -10,3 +10,12 @@
 *.lai
 *.la
 *.a
+
+# Others
+build/*
+moc_*.cpp
+qrc_*.cpp
+ui_*.h
+core
+*.core
+*~
