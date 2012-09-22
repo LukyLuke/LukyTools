@@ -33,7 +33,7 @@ unsigned int checksum(const string &num) {
         pos = (sum += atoi(&c)) % 10;
         sum = checkSum[pos];
     }
-    return (10 - sum);
+    return (10 - sum) % 10;
 }
 
 #endif // ESR_CHECKSUM_H
