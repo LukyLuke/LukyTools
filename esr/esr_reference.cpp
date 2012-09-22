@@ -35,8 +35,8 @@
  * $ ./esr_reference -b|--begin BEGIN -e|--end END -p|--prefix PREFIX -s|--suffix SUFFIX
  *  BEGIN:  The first number between PREFIX and SUFFIX - count up from START to END
  *  END:    The last number between PREFIX and SUFFIX - count up from START to END
- *  PREFIX: The Number before the calculated part
- *  SUFFIX: The Number after the calculated part
+ *  PREFIX: The Number before the changing part
+ *  SUFFIX: The Number after the changing part
  * 
  *  The Number is built as folow: PREFIX START->END SUFFIX
  *  The result is a list of numbers printed out
@@ -79,8 +79,8 @@ int main(int argc, char* argv[]) {
 				cout << "$ ./esr -b|--begin BEGIN -e|--end END -p|--prefix PREFIX -s|--suffix SUFFIX" << endl;
 				cout << "  BEGIN:  The first number between PREFIX and SUFFIX - count up from START to END" << endl;
 				cout << "  END:    The last number between PREFIX and SUFFIX - count up from START to END" << endl;
-				cout << "  PREFIX: The Number before the calculated part" << endl;
-				cout << "  SUFFIX: The Number after the calculated part" << endl << endl;
+				cout << "  PREFIX: The Number before the changing part" << endl;
+				cout << "  SUFFIX: The Number after the changing part" << endl << endl;
 				cout << "  The Number is built as folow: PREFIX START->END SUFFIX" << endl;
 				cout << "  The result is a list of numbers printed out" << endl;
 				return 0;
