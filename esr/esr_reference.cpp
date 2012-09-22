@@ -86,10 +86,10 @@ int main(int argc, char* argv[]) {
 				return 0;
 				
 			} else if ((o == "-b") || (o == "--begin")) {
-                start = abs(atoi(argv[++opts]));
+				start = abs(atoi(argv[++opts]));
 				
 			} else if ((o == "-e") || (o == "--end")) {
-                end = abs(atoi(argv[++opts]));
+				end = abs(atoi(argv[++opts]));
 				
 			} else if ((o == "-s") || (o == "--suffix")) {
 				suffix = argv[++opts];
