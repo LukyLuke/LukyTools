@@ -1,0 +1,15 @@
+--- gnc-keyring.c.old	2012-09-22 15:44:14.000000000 +0200
++++ gnc-keyring.c	2012-09-22 15:44:14.000000000 +0200
+@@ -50,9 +50,10 @@
+     GnomeKeyringResult  gkr_result;
+     guint32 item_id = 0;
+ 
+-    gkr_result = gnome_keyring_set_network_password_sync
++    /*gkr_result = gnome_keyring_set_network_password_sync
+                  (NULL, user, NULL, server, service,
+-                  access_method, NULL, port, password, &item_id);
++                  access_method, NULL, port, password, &item_id);*/
++    gkr_result = GNOME_KEYRING_RESULT_NO_KEYRING_DAEMON;
+ 
+     if (gkr_result != GNOME_KEYRING_RESULT_OK)
+     {
