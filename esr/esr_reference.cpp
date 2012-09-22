@@ -19,6 +19,8 @@
 /**
  * Compile:
  * $ gcc -o esr_reference esr_reference.cpp -lstdc++
+ * or
+ * $ g++ -o esr_reference esr_reference.cpp
  * 
  * 
  * Return the Number including the Checksum:
@@ -45,10 +47,9 @@
 #include <iostream>
 #include <string>
 
-using namespace std;
+#include "esr_checksum.h"
 
-int checkSum[] = {0, 9, 4, 6, 8, 2, 7, 1, 3, 5};
-int checksum(const string &num);
+using namespace std;
 
 string number;
 string prefix;
@@ -85,10 +86,10 @@ int main(int argc, char* argv[]) {
 				return 0;
 				
 			} else if ((o == "-b") || (o == "--begin")) {
-				start = atoi(argv[++opts]);
+                start = abs(atoi(argv[++opts]));
 				
 			} else if ((o == "-e") || (o == "--end")) {
-				end = atoi(argv[++opts]);
+                end = abs(atoi(argv[++opts]));
 				
 			} else if ((o == "-s") || (o == "--suffix")) {
 				suffix = argv[++opts];
@@ -132,13 +133,4 @@ int main(int argc, char* argv[]) {
 	}
 	
 	return 0;
-}
-
-int checksum(const string &num) {
-	int pos, sum = 0;
-	for (int i = 0; i < num.length(); i++) {
- 		pos = (sum += num.at(i)) % 10;
-		sum = checkSum[pos];
-	}
-	return checkSum[10 - sum];
 }
