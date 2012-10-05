@@ -21,7 +21,6 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <fcntl.h>
 #include <stdlib.h>
 
 using namespace std;
@@ -75,6 +74,12 @@ int main(int argc, char **argv) {
 	return 0;
 }
 
+/**
+ * Recursive call to calculate all amounts from all sections
+ * 
+ * @param *copy Outstanding sections
+ * @param amount Outstanding amount
+ */
 void calculate(map<string, float> *copy, float amount) {
 	if (amount <= 0) {
 		return;
@@ -120,16 +125,15 @@ void calculate(map<string, float> *copy, float amount) {
 	}
 }
 
-
+/**
+ * User can input a SectionName and an amount after
+ * finished by enter an empty string as Sectionname
+ */
 void createSections() {
-	/*sections.insert( pair<string, float>("PPS", 40) );
-	sections.insert( pair<string, float>("A",   30) );
-	sections.insert( pair<string, float>("AA", 120) );
-	return;*/
 	string line1, line2;
 	float amount;
 	while (true) {
-		cout << endl << "Enter the name of the Section: ";
+		cout << endl << "Enter the name of the Section or just press Enter finish: ";
 		getline(cin, line1);
 		
 		if (line1.empty()) {
