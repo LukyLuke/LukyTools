@@ -33,6 +33,11 @@ map<string, float> sections;
 map<string, float> payments;
 
 int main(int argc, char **argv) {
+  // Floating point output format to standard and not scientific
+  cout.setf(ios::fixed, ios::floatfield);
+  cout.setf(ios::showpoint);
+  cout.precision(2);
+  
 	createSections();
 	map<string, float> *copy = new map<string, float>();
 	map<string, float>::const_iterator it;
@@ -45,13 +50,19 @@ int main(int argc, char **argv) {
 	}
 	
 	while (true) {
-		// copy sections to calculate different paid amounts after
+		// copy sections to calculate different paid amounts after and show an overview
+    cout << endl << "Recommendations:" << endl;
+    cout << "-----------------------" << endl;
 		for (it = sections.begin(); it != sections.end(); it++) {
 			copy->insert( pair<string, float>(it->first, it->second) );
+      cout << " " << it->first << ":\t\t" << it->second << endl;
 		}
-		
+    cout << "-----------------------" << endl;
+    cout << " Recommend:\t" << sum << endl;
+    cout << "=======================" << endl << endl;
+    
 		// Get paid amount or exit
-		cout << "Amount paid (NaN to exit): ";
+		cout << "Amount paid (Empty to quit): ";
 		getline(cin, line);
 		amount = atof(line.c_str());
 		if (!amount) {
@@ -63,13 +74,14 @@ int main(int argc, char **argv) {
 		payments.clear();
 		calculate(copy, amount);
 		
-		cout << "Total recommendend: " << sum << endl;
-		cout << "Payments:" << endl;
+		cout << endl << "Payments:" << endl;
+    cout << "-----------------------" << endl;
 		for (it = payments.begin(); it != payments.end(); it++) {
-			cout << " * " << it->first << ": " << it->second << endl;
+      cout << " " << it->first << ":\t\t" << it->second << endl;
 		}
-		cout << "***********" << endl;
-		
+		cout << "-----------------------" << endl;
+    cout << " Paid:\t\t" << amount << endl;
+		cout << "=======================" << endl << endl;
 	}
 	return 0;
 }
@@ -88,13 +100,14 @@ void calculate(map<string, float> *copy, float amount) {
 	if (copy->size() > 0) {
 		map<string, float>::const_iterator it;
 		string least;
-		float due, smallest;
+		float due = 0, smallest = 0;
 		
 		// If the amount is bigger than the recommendend sum, give each section the procentula amount of it
 		if (amount >= sum) {
 			for (it = copy->begin(); it != copy->end(); it++) {
 				payments.insert( pair<string, float>(it->first, amount * (it->second / sum)) );
 			}
+      copy->clear();
 			return;
 		}
 		
@@ -103,7 +116,7 @@ void calculate(map<string, float> *copy, float amount) {
 			smallest = smallest <= 0 || it->second < smallest ? it->second : smallest;
 		}
 		due = amount / copy->size();
-		
+    
 		// if the due is smaller than the smallest amount, give the same amount to each unpaid section
 		if (due <= smallest) {
 			for (it = copy->begin(); it != copy->end(); it++) {
@@ -113,7 +126,7 @@ void calculate(map<string, float> *copy, float amount) {
 			return;
 		}
 		
-		// pay the smalles section and rerun this calculation with all other sections expect the one we pay here
+		// pay the smallest section and rerun this calculation with all other sections expect the one we pay here
 		for (it = copy->begin(); it != copy->end(); it++) {
 			if (due >= it->second) {
 				payments.insert( pair<string, float>(it->first, it->second) );
