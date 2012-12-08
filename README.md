@@ -40,3 +40,6 @@ or
 `$ g++ main.cpp -o fio`
 Don't forget the FileExtension '.exe' under Windows
 
+## helper
+
+In here are some small schripts and others which will help you during the day.

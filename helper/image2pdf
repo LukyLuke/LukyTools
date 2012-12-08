@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# Parameters
+_COLORS=${COLORS:-32}
+
+# Environment
+CONVERT=`which convert`
+
+usage() {
+	echo "Usage: ${0} IMAGE [IMAGE [...]] OUTPUT"
+	echo "  Optionally you can prepand the variable COLORS"
+	echo "  with aninteger witch defines the number of colors."
+	echo "  $ COLORS=\"16\" ${0} IMAGE [IMAGE [...]] OUTPUT"
+	echo ""
+	echo "Example:"
+	echo "  $ ${0} image1.png image2.png image3.png output.pdf"
+	echo "  $ COLORS=16 ${0} image1.png image2.png image3.png output.pdf"
+	exit 1
+}
+
+error() {
+	echo -e "\033[1m\E[31m$@\033[0m\E[0m"
+}
+
+# Minimum two parameters must be given - input and output file
+if [ $# -lt 2 ]; then
+	usage
+fi
+
+# Get input files and check if each File exists
+_INPUT=""
+_OUTPUT=""
+_X=1
+for _F in $@; do
+	# The last parameter is the output file
+	if [ $_X -eq $# ]; then
+		if [ -f $_F ]; then
+			error "Attention: $_F exists and will be overriden!"
+			echo -n "Press CTRL+C to abort or ENTER to continue: "
+			read line;
+		fi
+		_OUTPUT=$_F
+		break;
+	fi
+	
+	# Checkif the file exists and add it as inputfile
+	if [ -f $_F ]; then
+		_INPUT="${_INPUT} $_F"
+	else
+		error " File $_F does not exist"
+	fi
+	
+	let "_X = _X + 1"
+done
+
+$CONVERT -colors ${_COLORS} ${_INPUT} ${_OUTPUT}
+
+exit 0
