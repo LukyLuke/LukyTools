@@ -1,0 +1,5 @@
+#!/bin/sh 
+
+OUT=${1:-pdfmerge.pdf}
+shift
+gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=${OUT} ${@}

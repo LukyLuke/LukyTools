@@ -1,0 +1,32 @@
+#!/bin/sh 
+
+NUM=${1:-1}
+shift
+
+IN=${1:-none}
+shift
+
+OUT=${1:-pdfmerge.pdf}
+shift
+
+
+if [ "${IN}" == "none" ];
+then
+	echo "Usage: $0 NUM IN OUT"
+	echo "  NUM is the number of times IN should be multiplied"
+	echo "  IN  is the pdf which should be multiplied"
+	echo "  OUT is the Output pdf file"
+	exit 1;
+fi
+
+cp "${IN}" "${OUT}"
+
+COUNT=1
+while [ ${COUNT} -lt ${NUM} ];
+do
+	gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -sOutputFile=${OUT}.tmp ${OUT} ${IN}
+	mv ${OUT}.tmp ${OUT}
+	let "COUNT++"
+done
+
+exit 0;
