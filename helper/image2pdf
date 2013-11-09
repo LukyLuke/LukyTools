@@ -53,6 +53,12 @@ for _F in $@; do
 	let "_X = _X + 1"
 done
 
-$CONVERT -colors ${_COLORS} ${_INPUT} ${_OUTPUT}
+if [ ${_COLORS} -eq 2 ]; then
+  _COLORS="-colors 8 -colorspace Gray"
+else
+  _COLORS="-colors $_{COLORS}"
+fi
+
+$CONVERT ${_COLORS} -resize 2000">" ${_INPUT} ${_OUTPUT}
 
 exit 0
