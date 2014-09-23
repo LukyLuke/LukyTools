@@ -82,8 +82,8 @@ DATE=`date +${DATE_FORMAT}`
 # Unlike to when we not use an archive folder, this cleanup is done below
 # where we know which tables we have from a database.
 __clean_dir() {
-  while [ `ls -1 ${1} | wc -l` -ge ${MAX_DAYS} ]; do
-    _LATEST=`ls -c1 ${1} | head -n1`
+  while [ `ls -1 ${1} 2>/dev/null | wc -l` -ge ${MAX_DAYS} ]; do
+    _LATEST=`ls -c1 ${1} 2>/dev/null | head -n1`
     rm -Rf ${_LATEST} 1>/dev/null 2>&1
   done
 }
@@ -147,7 +147,7 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
     ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
     
     # If there is a seperated archive folder, hardlink the latest backup to the current folder
-    NUM_TABLES=`ls -1 ${DEST} | wc -l`
+    NUM_TABLES=`ls -1 ${DEST} 2>/dev/null | wc -l`
     if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ] && [ ${NUM_TABLES} -gt 1 ]; then
       rm ${CUR}* 1>/dev/null 2>&1
       cp -lfr ${DEST}* `dirname ${CUR}tmp`
