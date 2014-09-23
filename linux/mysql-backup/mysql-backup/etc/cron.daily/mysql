@@ -1,0 +1,161 @@
+#!/bin/bash
+#
+# MySQL Backup script for running by cron or any other time based tool
+#
+# Author: Lukas Zurschmiede <lukas.zurschmiede@ranta.ch>
+# License: GPLv3 or later
+# Source: https://github.com/LukyLuke/LukyTools/tree/master/linux/mysql-backup/
+#
+# For debugging: Print the line before it is executed
+#                use -x as bash parameter in this files header
+
+# First of all we need a Lockfile and an exit trap to clean up the Lockfile before exit
+LOCK_FILE=$([ "${TMPDIR}x" == "x" ] && echo "/tmp" || echo ${TMPDIR})
+LOCK_FILE="${LOCK_FILE}/.mysql-backup.lock"
+if [ -f "${LOCK_FILE}" ]; then
+  echo "There is already a mysql-backup running: Check the PID `cat ${LOCK_FILE}`"
+  exit 255
+fi
+__cleanup__mysql_backup() {
+  rm -rf "${LOCK_FILE}"
+}
+trap __cleanup__mysql_backup EXIT
+echo $$ > ${LOCK_FILE}
+
+
+# Include the global configuration and set the default values if not set
+if [ -f /etc/default/myqsl_backup.conf ]; then
+  . /etc/default/mysql_backup.conf
+fi
+
+MAX_DAYS=${MAX_DAYS:-7}
+DESTINATION=${DESTINATION:-"/var/lib/mysql-backup/"}
+CLIENT_CONFIG=${CLIENT_CONFIG:-"/etc/mysql/debian.cnf"}
+GZIP=${GZIP:-`which gzip`}
+MYSQL=${MYSQL:-`which mysql`}
+MYSQLADMIN=${MYSQLADMIN:-`which mysqladmin`}
+MYSQLDUMP=${MYSQLDUMP:-`which mysqldump`}
+EXCLUDE=${EXCLUDE:-""}
+MYSQLDUMP_OPTS=${MYSQLDUMP_OPTS:-"--skip-lock-tables --add-drop-table --compact --no-create-db --events --ignore-table=mysql.event"}
+DATE_FORMAT=${DATE_FORMAT:-"%Y-%m-%d_%H-%M"}
+SEPERATE_DB_FOLDER=${SEPERATE_DB_FOLDER:-"yes"}
+SEPERATE_ARCHIVE_FOLDER=${SEPERATE_ARCHIVE_FOLDER:-"no"}
+
+# Test for a correct configuration
+executable() {
+  [ -x $1 ] || ( echo "$1 is not executable."; return 1 )
+  return 0
+}
+exists() {
+  [ -r $1 ] || ( echo "$1 is not a file or not readable."; return 1 )
+  return 0
+}
+executable ${GZIP}; [ $? -gt 0 ] && exit $?
+executable ${MYSQL}; [ $? -gt 0 ] && exit $?
+executable ${MYSQLADMIN}; [ $? -gt 0 ] && exit $?
+executable ${MYSQLDUMP}; [ $? -gt 0 ] && exit $?
+exists ${CLIENT_CONFIG}; [ $? -gt 0 ] && exit $?
+
+# Create the backup folder if it does not exist
+mkdir -p ${DESTINATION}
+if [ ! -d ${DESTINATION} ]; then
+  echo "Unable to create the MySQL backup folder ${DESTINATION}"
+  exit 1
+fi
+
+# Simplify the options to check for a separate folder per
+# database and the splitup into archive and current backups
+SEPERATE_DB_FOLDER=$(echo ${SEPERATE_DB_FOLDER} | tr '[A-Z]' '[a-z]')
+SEPERATE_DB_FOLDER=$([ "${SEPERATE_DB_FOLDER:0:1}" == "y" -o "${SEPERATE_DB_FOLDER:0:1}" == "t" ] && echo 1 || echo 0)
+
+SEPERATE_ARCHIVE_FOLDER=$(echo ${SEPERATE_ARCHIVE_FOLDER} | tr '[A-Z]' '[a-z]')
+SEPERATE_ARCHIVE_FOLDER=$([ "${SEPERATE_ARCHIVE_FOLDER:0:1}" == "y" -o "${SEPERATE_ARCHIVE_FOLDER:0:1}" == "t" ] && echo 1 || echo 0)
+
+# Helper variables to make the commands more clean
+CONF="--defaults-file=${CLIENT_CONFIG}"
+EXCLUDE=",${EXCLUDE},information_schema,"
+DATE=`date +${DATE_FORMAT}`
+
+# Clean up old backups before we create the new ones due to save space
+# If we have separated backup folders, we just remove all old folders
+# so we have ${MAX_DAYS} - 1 backups.
+# Unlike to when we not use an archive folder, this cleanup is done below
+# where we know which tables we have from a database.
+__clean_dir() {
+  while [ `ls -1 ${1} | wc -l` -ge ${MAX_DAYS} ]; do
+    _LATEST=`ls -c1 ${1} | head -n1`
+    rm -Rf ${_LATEST} 1>/dev/null 2>&1
+  done
+}
+if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
+  __clean_dir "${DESTINATION}/archive/";
+fi
+
+# Dump all databases and tables by single file
+for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
+  # With the [[ ]] we can use RegEx for compare strings
+  if [[ "${EXCLUDE}" != *",${DB},"* ]]; then
+    DEST=${DESTINATION}
+    CUR=${DESTINATION}
+    
+    # Destination where to store the current backup
+    if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
+      DEST="${DEST}/archive/${DATE}"
+      CUR="${CUR}/latest"
+    fi
+    
+    # Create the folder to store the backup in
+    if [ ${SEPERATE_DB_FOLDER} -eq 1 ]; then
+      DEST="${DEST}/${DB}/"
+      CUR="${CUR}/${DB}/"
+    else
+      DEST="${DEST}/${DB}__"
+      CUR="${CUR}/${DB}__"
+    fi
+    mkdir -p `dirname ${DEST}tmp`
+    mkdir -p `dirname ${CUR}tmp`
+
+    # Dump each table (but not views) in an own file
+    # We not use --tab=dir for mysqldump because we not want a CSV datafile
+    for TABLE in `${MYSQL} ${CONF} --skip-column-names INFORMATION_SCHEMA -se "SELECT table_name FROM tables WHERE table_type='BASE TABLE' AND table_schema='${DB}'"`; do
+      # First create backup of data and structure
+      if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
+        FILE="${DEST}${TABLE}__data.sql.gz"
+      else
+        FILE="${DEST}${TABLE}__data__${DATE}.sql.gz"
+        __clean_dir "${DEST}${TABLE}__data__*"
+      fi
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} ${TABLE} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
+      
+      # Second create a structure only dump to be able to restore crashed cache tables etc.
+      if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
+        FILE="${DEST}${TABLE}__structure.sql.gz"
+      else
+        FILE="${DEST}${TABLE}__structure__${DATE}.sql.gz"
+        __clean_dir "${DEST}${TABLE}__structure__*"
+      fi
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} ${TABLE} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
+    done
+    
+    # Third dump out the full structure of the complete database
+    if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
+      FILE="${DEST}${DB}__structure.sql.gz"
+    else
+      FILE="${DEST}${DB}__structure__${DATE}.sql.gz"
+      __clean_dir "${DEST}${DB}__structure__*"
+    fi
+    ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
+    
+    # If there is a seperated archive folder, hardlink the latest backup to the current folder
+    NUM_TABLES=`ls -1 ${DEST} | wc -l`
+    if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ] && [ ${NUM_TABLES} -gt 1 ]; then
+      rm ${CUR}* 1>/dev/null 2>&1
+      cp -lfr ${DEST}* `dirname ${CUR}tmp`
+    fi
+  fi
+done
+
+# Change all file permissions even if there are old ones
+chmod -R 0640 ${DESTINATION}/*
+
+exit 0

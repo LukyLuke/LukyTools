@@ -1,0 +1,12 @@
+This script is for backup up all mysql databases in separate table files.
+
+The script is used as a daily cron (/etc/cron.daily/mysql) and can be
+configured through the defaults config file (/etc/default/mysql_backup.conf)
+
+As default, each database is dumped in a single directory, all tables as own data
+and structure files. The backup is split up in a latest and an archive folder in
+which each backup time has it's own subfolder and the lates folder contains
+hardlinks to the latest backup.
+
+Created for backup various debian installations, so there is a deb package.
+to build the package, use: dpkg-deb --build mysql-backup mysql-backup-0.1.2-0.deb

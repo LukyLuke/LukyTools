@@ -1,0 +1,2 @@
+dcb4827672039fa06313740994e59d08  etc/cron.daily/mysql
+e3e7e68390a832c9c0383531bc70ce17  etc/default/mysql_backup.conf
