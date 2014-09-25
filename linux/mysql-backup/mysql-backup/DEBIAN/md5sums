@@ -1,2 +1,2 @@
-72f43b38f6d61038436d071158909f57  mysql-backup/etc/cron.daily/mysql
-e3e7e68390a832c9c0383531bc70ce17  mysql-backup/etc/default/mysql_backup.conf
+0fbe98e59ee73b90b71e68a39b6eb83a  mysql-backup/etc/cron.daily/mysql
+704fad906dabca0e1109547934e39bda  mysql-backup/etc/default/mysql_backup.conf

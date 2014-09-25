@@ -3,7 +3,7 @@ Version: 0.1.2-0
 Section: admin
 Architecture: all
 Priority: optional
-Installed-Size: 19
+Installed-Size: 24
 Maintainer: Lukas Zurschmiede <lukas.zurschmiede@ranta.ch>
 Description: This is a simple backup script for MySQL which
  stores all tables separated in a compressed file.
