@@ -10,3 +10,7 @@ hardlinks to the latest backup.
 
 Created for backup various debian installations, so there is a deb package.
 to build the package, use: dpkg-deb --build mysql-backup mysql-backup-0.1.2-0.deb
+
+For testing if this script runs as predicted, run it in your configured
+cron environment:
+$ env - `cat /etc/crontab | grep -v "#" | grep -v "^$" | grep -v /etc/cron` /etc/cron.daily/mysql

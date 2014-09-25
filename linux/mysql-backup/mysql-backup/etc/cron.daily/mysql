@@ -39,7 +39,7 @@ EXCLUDE=${EXCLUDE:-""}
 MYSQLDUMP_OPTS=${MYSQLDUMP_OPTS:-"--skip-lock-tables --add-drop-table --compact --no-create-db --events --ignore-table=mysql.event"}
 DATE_FORMAT=${DATE_FORMAT:-"%Y-%m-%d_%H-%M"}
 SEPERATE_DB_FOLDER=${SEPERATE_DB_FOLDER:-"yes"}
-SEPERATE_ARCHIVE_FOLDER=${SEPERATE_ARCHIVE_FOLDER:-"no"}
+SEPERATE_ARCHIVE_FOLDER=${SEPERATE_ARCHIVE_FOLDER:-"yes"}
 
 # Test for a correct configuration
 executable() {
@@ -91,6 +91,9 @@ if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
   __clean_dir "${DESTINATION}/archive/";
 fi
 
+# The logfile is just a simple file inside the backup dir
+LOG_FILE=${DESTINATION}/mysql_backup.log
+
 # Dump all databases and tables by single file
 for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
   # With the [[ ]] we can use RegEx for compare strings
@@ -125,7 +128,7 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
         FILE="${DEST}${TABLE}__data__${DATE}.sql.gz"
         __clean_dir "${DEST}${TABLE}__data__*"
       fi
-      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} ${TABLE} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} ${TABLE} 2>>${LOG_FILE} | ${GZIP} -9 > ${FILE}
       
       # Second create a structure only dump to be able to restore crashed cache tables etc.
       if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
@@ -134,7 +137,7 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
         FILE="${DEST}${TABLE}__structure__${DATE}.sql.gz"
         __clean_dir "${DEST}${TABLE}__structure__*"
       fi
-      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} ${TABLE} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} ${TABLE} 2>>${LOG_FILE} | ${GZIP} -9 > ${FILE}
     done
     
     # Third dump out the full structure of the complete database
@@ -144,7 +147,7 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
       FILE="${DEST}${DB}__structure__${DATE}.sql.gz"
       __clean_dir "${DEST}${DB}__structure__*"
     fi
-    ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} 1>/dev/null 2>&1 | ${GZIP} -9 > ${FILE}
+    ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} 2>>${LOG_FILE} | ${GZIP} -9 > ${FILE}
     
     # If there is a seperated archive folder, hardlink the latest backup to the current folder
     NUM_TABLES=`ls -1 ${DEST} 2>/dev/null | wc -l`
