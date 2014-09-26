@@ -36,7 +36,7 @@ MYSQL=${MYSQL:-`which mysql`}
 MYSQLADMIN=${MYSQLADMIN:-`which mysqladmin`}
 MYSQLDUMP=${MYSQLDUMP:-`which mysqldump`}
 EXCLUDE=${EXCLUDE:-""}
-MYSQLDUMP_OPTS=${MYSQLDUMP_OPTS:-"--skip-lock-tables --add-drop-table --compact --no-create-db --events --ignore-table=mysql.event"}
+MYSQLDUMP_OPTS=${MYSQLDUMP_OPTS:-"--skip-lock-tables --add-drop-table --compact --no-create-db --skip-events"}
 DATE_FORMAT=${DATE_FORMAT:-"%Y-%m-%d_%H-%M"}
 SEPERATE_DB_FOLDER=${SEPERATE_DB_FOLDER:-"yes"}
 SEPERATE_ARCHIVE_FOLDER=${SEPERATE_ARCHIVE_FOLDER:-"yes"}
