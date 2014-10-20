@@ -77,16 +77,20 @@ CONF="--defaults-file=${CLIENT_CONFIG}"
 EXCLUDE=",${EXCLUDE},information_schema,"
 DATE=`date +${DATE_FORMAT}`
 
-# Clean up old backups before we create the new ones due to save space
-# If we have separated backup folders, we just remove all old folders
-# so we have ${MAX_DAYS} - 1 backups.
-# Unlike to when we not use an archive folder, this cleanup is done below
-# where we know which tables we have from a database.
+# Clean up old files in a directory - only let $MAX_NUM files in place
+# based on the given parameter.
 __clean_dir() {
-  while [ `ls -1 ${1} 2>/dev/null | wc -l` -ge ${MAX_DAYS} ]; do
-    _LATEST=`ls -c1 ${1} 2>/dev/null | head -n1`
-    rm -Rf ${_LATEST} 1>/dev/null 2>&1
-  done
+  _PWD=`dirname "${1}tmp"`
+  if [ ! -d "${_PWD}" ]; then
+    echo "Unable to clean up '${1}'; This folder does not exist." >> ${ERROR_LOG}
+    return 255
+  fi
+  cd "${_PWD}"
+
+  # "tail" needs the index and not the number of entries.
+  let "_MAX_DAYS=MAX_DAYS + 1"
+  ls -1t "${1}" | tail -n +${_MAX_DAYS} | xargs -I{} rm "{}" &>${ERROR_LOG} 2>&1
+  cd -
 }
 if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
   __clean_dir "${DESTINATION}/archive/";
