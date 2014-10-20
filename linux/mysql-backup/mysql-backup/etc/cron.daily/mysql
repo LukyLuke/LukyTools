@@ -10,17 +10,18 @@
 #                use -x as bash parameter in this files header
 
 # First of all we need a Lockfile and an exit trap to clean up the Lockfile before exit
+# Some systems set $TMPDIR as an environment variable, if this is not the case, use /tmp
 LOCK_FILE=$([ "${TMPDIR}x" == "x" ] && echo "/tmp" || echo ${TMPDIR})
 LOCK_FILE="${LOCK_FILE}/.mysql-backup.lock"
 if [ -f "${LOCK_FILE}" ]; then
-  echo "There is already a mysql-backup running: Check the PID `cat ${LOCK_FILE}`"
+  echo "There is already a ${0} process running (`cat ${LOCK_FILE}`)"
   exit 255
 fi
 __cleanup__mysql_backup() {
-  rm -rf "${LOCK_FILE}"
+  rm -f "${LOCK_FILE}"
 }
 trap __cleanup__mysql_backup EXIT
-echo $$ > ${LOCK_FILE}
+echo $$ > "${LOCK_FILE}"
 
 
 # Include the global configuration and set the default values if not set
@@ -44,11 +45,11 @@ ERROR_LOG=${ERROR_LOG:-"/dev/stdout"}
 
 # Test for a correct configuration
 executable() {
-  [ -x $1 ] || ( echo "$1 is not executable."; return 1 )
+  [ -x "$1" ] || ( echo "$1 is not executable."; return 1 )
   return 0
 }
 exists() {
-  [ -r $1 ] || ( echo "$1 is not a file or not readable."; return 1 )
+  [ -r "$1" ] || ( echo "$1 is not a file or not readable."; return 1 )
   return 0
 }
 executable ${GZIP}; [ $? -gt 0 ] && exit $?
@@ -117,8 +118,8 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
       DEST="${DEST}/${DB}__"
       CUR="${CUR}/${DB}__"
     fi
-    mkdir -p `dirname ${DEST}tmp`
-    mkdir -p `dirname ${CUR}tmp`
+    mkdir -p `dirname "${DEST}tmp"`
+    mkdir -p `dirname "${CUR}tmp"`
 
     # Dump each table (but not views) in an own file
     # We not use --tab=dir for mysqldump because we not want a CSV datafile
@@ -130,7 +131,7 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
         FILE="${DEST}${TABLE}__data__${DATE}.sql.gz"
         __clean_dir "${DEST}${TABLE}__data__*"
       fi
-      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} ${TABLE} 2>>${ERROR_LOG} | ${GZIP} -9 > ${FILE}
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} ${TABLE} 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
       
       # Second create a structure only dump to be able to restore crashed cache tables etc.
       if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
@@ -139,7 +140,7 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
         FILE="${DEST}${TABLE}__structure__${DATE}.sql.gz"
         __clean_dir "${DEST}${TABLE}__structure__*"
       fi
-      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} ${TABLE} 2>>${ERROR_LOG} | ${GZIP} -9 > ${FILE}
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} ${TABLE} 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
     done
     
     # Third dump out the full structure of the complete database
@@ -149,18 +150,18 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
       FILE="${DEST}${DB}__structure__${DATE}.sql.gz"
       __clean_dir "${DEST}${DB}__structure__*"
     fi
-    ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} 2>>${ERROR_LOG} | ${GZIP} -9 > ${FILE}
+    ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
     
     # If there is a seperated archive folder, hardlink the latest backup to the current folder
     NUM_TABLES=`ls -1 ${DEST} 2>/dev/null | wc -l`
     if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ] && [ ${NUM_TABLES} -gt 1 ]; then
-      rm ${CUR}* 1>/dev/null 2>&1
-      cp -lfr ${DEST}* `dirname ${CUR}tmp`
+      rm "${CUR}*" 1>/dev/null 2>&1
+      cp -lfr "${DEST}*" `dirname "${CUR}tmp"`
     fi
   fi
 done
 
 # Change all file permissions even if there are old ones
-chmod -R 0640 ${DESTINATION}/*
+chmod -R 0640 "${DESTINATION}"
 
 exit 0
