@@ -123,24 +123,27 @@ for DB in `${MYSQL} ${CONF} --skip-column-names -se "SHOW DATABASES;"`; do
 
     # Dump each table (but not views) in an own file
     # We not use --tab=dir for mysqldump because we not want a CSV datafile
-    for TABLE in `${MYSQL} ${CONF} --skip-column-names INFORMATION_SCHEMA -se "SELECT table_name FROM tables WHERE table_type='BASE TABLE' AND table_schema='${DB}'"`; do
+    # All Whitespaces are replaced with {__WS__} due to for-loops are not so happy with whitespaces
+    for TABLE in `${MYSQL} ${CONF} --skip-column-names INFORMATION_SCHEMA -se "SELECT REPLACE(table_name, ' ', '{__WS__}') FROM tables WHERE table_type='BASE TABLE' AND table_schema='${DB}'"`; do
+      TABLE=${TABLE//\{__WS__\}/ }
+
       # First create backup of data and structure
       if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
-        FILE="${DEST}${TABLE}__data.sql.gz"
+        FILE="${DEST}${TABLE// /_}__data.sql.gz"
       else
-        FILE="${DEST}${TABLE}__data__${DATE}.sql.gz"
-        __clean_dir "${DEST}${TABLE}__data__*"
+        FILE="${DEST}${TABLE// /_}__data__${DATE}.sql.gz"
+        __clean_dir "${DEST}${TABLE// /_}__data__*"
       fi
-      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} ${TABLE} 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} ${DB} "${TABLE}" 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
       
       # Second create a structure only dump to be able to restore crashed cache tables etc.
       if [ ${SEPERATE_ARCHIVE_FOLDER} -eq 1 ]; then
-        FILE="${DEST}${TABLE}__structure.sql.gz"
+        FILE="${DEST}${TABLE// /_}__structure.sql.gz"
       else
-        FILE="${DEST}${TABLE}__structure__${DATE}.sql.gz"
-        __clean_dir "${DEST}${TABLE}__structure__*"
+        FILE="${DEST}${TABLE// /_}__structure__${DATE}.sql.gz"
+        __clean_dir "${DEST}${TABLE// /_}__structure__*"
       fi
-      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} ${TABLE} 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
+      ${MYSQLDUMP} ${CONF} ${MYSQLDUMP_OPTS} --no-data ${DB} "${TABLE}" 2>>${ERROR_LOG} | ${GZIP} -9 > "${FILE}"
     done
     
     # Third dump out the full structure of the complete database
